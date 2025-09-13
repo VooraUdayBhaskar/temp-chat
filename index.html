@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth0 AI Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main Container -->
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl h-[90vh] flex flex-col">
+        
+        <!-- Header -->
+        <div class="bg-gray-800 text-white p-4 rounded-t-lg flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-robot text-xl text-indigo-400"></i>
+                <h1 class="text-xl font-bold">Auth0 AI Assistant</h1>
+            </div>
+        </div>
+
+        <!-- Chat History -->
+        <div id="chatHistory" class="flex-1 p-6 overflow-y-auto space-y-4">
+            <!-- Messages will be injected here -->
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-robot text-2xl text-indigo-500"></i>
+                </div>
+                <div class="ml-3 bg-gray-200 p-3 rounded-lg max-w-[80%]">
+                    <p class="text-gray-800">Hello! I am your personal Auth0 assistant. I can retrieve information about your tenant. Feel free to ask me about the number of users, tenant settings, or expiring certificates.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input and Send Button -->
+        <div class="p-4 bg-gray-100 rounded-b-lg flex items-center space-x-2">
+            <input type="text" id="userInput" placeholder="Ask me about your tenant..." class="flex-1 p-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow duration-200">
+            <button id="sendButton" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full transition-colors duration-200">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="flex flex-col items-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-white"></i>
+            <p class="mt-4 text-white font-medium">Thinking...</p>
+        </div>
+    </div>
+
+    <script>
+        const chatHistoryDiv = document.getElementById('chatHistory');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const loadingIndicator = document.getElementById('loading');
+
+        const displayMessage = (message, sender) => {
+            const messageContainer = document.createElement('div');
+            messageContainer.className = `flex items-start ${sender === 'user' ? 'justify-end' : ''} space-x-3`;
+
+            const messageBubble = document.createElement('div');
+            messageBubble.className = `p-3 rounded-lg max-w-[80%] ${sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`;
+            messageBubble.innerHTML = message;
+
+            const iconContainer = document.createElement('div');
+            iconContainer.className = 'flex-shrink-0';
+            const icon = document.createElement('i');
+            icon.className = sender === 'user' ? 'fas fa-user-circle text-2xl text-gray-500' : 'fas fa-robot text-2xl text-indigo-500';
+
+            if (sender === 'user') {
+                iconContainer.appendChild(icon);
+                messageContainer.appendChild(messageBubble);
+                messageContainer.appendChild(iconContainer);
+            } else {
+                iconContainer.appendChild(icon);
+                messageContainer.appendChild(iconContainer);
+                messageContainer.appendChild(messageBubble);
+            }
+
+            chatHistoryDiv.appendChild(messageContainer);
+            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+        };
+
+        const showLoading = () => loadingIndicator.classList.remove('hidden');
+        const hideLoading = () => loadingIndicator.classList.add('hidden');
+
+        const handleUserRequest = async () => {
+            const userMessage = userInput.value.trim();
+            if (!userMessage) return;
+
+            displayMessage(userMessage, 'user');
+            userInput.value = '';
+            showLoading();
+
+            try {
+                const response = await fetch('/api', { // Send request to the /api endpoint
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: userMessage })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Server error with status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayMessage(data.response, 'bot');
+            } catch (error) {
+                displayMessage(`Apologies, I encountered an error. Details: ${error.message}`, 'bot');
+                console.error('Error in chat flow:', error);
+            } finally {
+                hideLoading();
+            }
+        };
+
+        sendButton.addEventListener('click', handleUserRequest);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleUserRequest();
+            }
+        });
+    </script>
+</body>
+</html>
