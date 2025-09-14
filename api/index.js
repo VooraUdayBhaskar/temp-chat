@@ -230,12 +230,13 @@ module.exports = async (req, res) => {
 
     try {
         const geminiResponse = await callGeminiWithTools(prompt, availableTools);
-        const functionCall = geminiResponse.parts.find(part => part.function_call);
+        const parts = geminiResponse.parts || [];
+        const functionCall = parts.find(part => part.functionCall);
 
         console.log("Function call object from Gemini:", functionCall);
 
-        if (functionCall) {
-            const functionName = functionCall.function_call.name;
+        if (functionCall && functionCall.functionCall && functionCall.functionCall.name) {
+            const functionName = functionCall.functionCall.name;
             let toolResponseData;
             
             console.log(`Checking for local tool implementation for: ${functionName}`);
@@ -252,7 +253,7 @@ module.exports = async (req, res) => {
 
             res.json({ response: finalResponse });
         } else {
-            res.json({ response: geminiResponse.parts[0].text });
+            res.json({ response: geminiResponse.parts?.[0]?.text || 'I am sorry, I could not fulfill your request.' });
         }
     } catch (error) {
         console.error('Error in chat flow:', error);
