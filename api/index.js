@@ -232,10 +232,13 @@ module.exports = async (req, res) => {
         const geminiResponse = await callGeminiWithTools(prompt, availableTools);
         const functionCall = geminiResponse.parts.find(part => part.function_call);
 
+        console.log("Function call object from Gemini:", functionCall);
+
         if (functionCall) {
             const functionName = functionCall.function_call.name;
             let toolResponseData;
             
+            console.log(`Checking for local tool implementation for: ${functionName}`);
             if (Auth0Api[functionName]) {
                 toolResponseData = await Auth0Api[functionName]();
             } else {
