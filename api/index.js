@@ -1,3 +1,4 @@
+// This is a new comment to trigger a re-deployment.
 const fetch = require('node-fetch');
 
 // --- Secure Credentials from Environment Variables ---
@@ -174,8 +175,14 @@ const availableTools = [
     }
 ];
 
-// --- Vercel Serverless Function Handler ---
+// Vercel Serverless Function Handler
 module.exports = async (req, res) => {
+    console.log("--- Starting Serverless Function ---");
+    console.log("AUTH0_DOMAIN:", AUTH0_DOMAIN ? "Set" : "Undefined");
+    console.log("AUTH0_CLIENT_ID:", AUTH0_CLIENT_ID ? "Set" : "Undefined");
+    console.log("AUTH0_CLIENT_SECRET:", AUTH0_CLIENT_SECRET ? "Set" : "Undefined");
+    console.log("GEMINI_API_KEY:", GEMINI_API_KEY ? "Set" : "Undefined");
+    
     if (req.method !== 'POST') {
         res.status(405).json({ error: 'Method Not Allowed' });
         return;
