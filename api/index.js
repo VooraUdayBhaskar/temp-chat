@@ -8,7 +8,6 @@ const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=" + GEMINI_API_KEY;
 
-// --- Force a new token request for debugging ---
 let auth0Token = '';
 let tokenExpiry = 0;
 
@@ -167,7 +166,7 @@ const callGeminiForResponse = async (prompt, toolResponse) => {
         "contents": [
             {
                 "role": "user",
-                "parts": [{ "text": prompt }]
+                "parts": [{ "text": `Given the following user query: "${prompt}" and the API response: "${JSON.stringify(toolResponse.response)}", please provide a concise and professional summary. Format the information with clear, bold headings and use bullet points for lists to make it easy to read.` }]
             },
             {
                 "role": "tool",
