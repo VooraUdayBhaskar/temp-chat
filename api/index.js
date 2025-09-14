@@ -16,9 +16,12 @@ let tokenExpiry = 0;
 // Function to get a fresh Auth0 Management API token
 const getAuth0Token = async () => {
     const now = Date.now();
+    console.log("Checking for cached token...");
     if (auth0Token && tokenExpiry > now) {
+        console.log("Using cached Auth0 token.");
         return auth0Token;
     }
+    console.log("Cached token is expired or not present. Requesting a new one.");
 
     const tokenUrl = `https://${AUTH0_DOMAIN}/oauth/token`;
     const payload = {
@@ -29,17 +32,23 @@ const getAuth0Token = async () => {
     };
 
     try {
+        console.log(`Attempting to retrieve Auth0 token from: ${tokenUrl}`);
         const response = await fetch(tokenUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
+        console.log(`Auth0 token response status: ${response.status}`);
+        
+        const responseText = await response.text();
+        console.log(`Auth0 token raw response: ${responseText}`);
+
         if (!response.ok) {
-            throw new Error(`Auth0 token retrieval failed with status: ${response.status}`);
+            throw new Error(`Auth0 token retrieval failed with status: ${response.status}. Response: ${responseText}`);
         }
 
-        const data = await response.json();
+        const data = JSON.parse(responseText);
         auth0Token = data.access_token;
         tokenExpiry = now + (data.expires_in - 300) * 1000;
         console.log("Successfully retrieved new Auth0 token.");
@@ -54,6 +63,7 @@ const getAuth0Token = async () => {
 // Auth0 API call functions (the "tools")
 const Auth0Api = {
     listUsers: async () => {
+        console.log("Attempting to call Auth0Api.listUsers...");
         const token = await getAuth0Token();
         if (!token) throw new Error('Could not retrieve Auth0 token.');
 
@@ -62,12 +72,16 @@ const Auth0Api = {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
+        const data = await response.json();
+        console.log("Auth0 listUsers response:", JSON.stringify(data, null, 2));
+
         if (!response.ok) {
             throw new Error(`Auth0 API call failed with status: ${response.status}`);
         }
-        return await response.json();
+        return data;
     },
     getTenantSettings: async () => {
+        console.log("Attempting to call Auth0Api.getTenantSettings...");
         const token = await getAuth0Token();
         if (!token) throw new Error('Could not retrieve Auth0 token.');
 
@@ -75,12 +89,17 @@ const Auth0Api = {
         const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        
+        const data = await response.json();
+        console.log("Auth0 getTenantSettings response:", JSON.stringify(data, null, 2));
+        
         if (!response.ok) {
             throw new Error(`Auth0 API call failed with status: ${response.status}`);
         }
-        return await response.json();
+        return data;
     },
     listSigningKeys: async () => {
+        console.log("Attempting to call Auth0Api.listSigningKeys...");
         const token = await getAuth0Token();
         if (!token) throw new Error('Could not retrieve Auth0 token.');
 
@@ -88,10 +107,14 @@ const Auth0Api = {
         const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        const data = await response.json();
+        console.log("Auth0 listSigningKeys response:", JSON.stringify(data, null, 2));
+
         if (!response.ok) {
             throw new Error(`Auth0 API call failed with status: ${response.status}`);
         }
-        return await response.json();
+        return data;
     }
 };
 
@@ -107,7 +130,8 @@ const callGeminiWithTools = async (prompt, tools) => {
             "function_declarations": tools
         }]
     };
-
+    
+    console.log("--- Calling Gemini with tools... ---");
     const response = await fetch(GEMINI_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,6 +144,8 @@ const callGeminiWithTools = async (prompt, tools) => {
     }
 
     const data = await response.json();
+    console.log("Gemini response (first call):", JSON.stringify(data, null, 2));
+
     return data.candidates[0].content;
 };
 
@@ -141,6 +167,9 @@ const callGeminiForResponse = async (prompt, toolResponse) => {
             }
         ]
     };
+    
+    console.log("--- Calling Gemini for final response... ---");
+    console.log("Data sent to Gemini (second call):", JSON.stringify(payload, null, 2));
 
     const response = await fetch(GEMINI_API_URL, {
         method: 'POST',
@@ -154,7 +183,12 @@ const callGeminiForResponse = async (prompt, toolResponse) => {
     }
 
     const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+    console.log("Gemini response (second call):", JSON.stringify(data, null, 2));
+    
+    const finalResponseText = data.candidates[0].content.parts[0].text;
+    console.log("Final response text to be sent to front-end:", finalResponseText);
+
+    return finalResponseText;
 };
 
 const availableTools = [
