@@ -13,7 +13,10 @@ let tokenExpiry = 0;
 
 // --- Backend API Logic (The "Agent") ---
 
-// Function to get a fresh Auth0 Management API token
+/**
+ * Retrieves a fresh Auth0 Management API access token.
+ * It uses a caching mechanism to avoid unnecessary API calls.
+ */
 const getAuth0Token = async () => {
     const now = Date.now();
     console.log("Checking for cached token...");
@@ -62,8 +65,11 @@ const getAuth0Token = async () => {
 
 // Auth0 API call functions (the "tools")
 const Auth0Api = {
-    listUsers: async () => {
-        console.log("Attempting to call Auth0Api.listUsers...");
+    /**
+     * Calls the Auth0 Management API to retrieve a list of all users.
+     */
+    list_users: async () => {
+        console.log("Attempting to call Auth0Api.list_users...");
         const token = await getAuth0Token();
         if (!token) throw new Error('Could not retrieve Auth0 token.');
 
@@ -73,15 +79,18 @@ const Auth0Api = {
         });
 
         const data = await response.json();
-        console.log("Auth0 listUsers response:", JSON.stringify(data, null, 2));
+        console.log("Auth0 list_users response:", JSON.stringify(data, null, 2));
 
         if (!response.ok) {
-            throw new Error(`Auth0 API call failed with status: ${response.status}`);
+            throw new Error(`Auth0 API call failed with status: ${response.status}. Response: ${JSON.stringify(data)}`);
         }
         return data;
     },
-    getTenantSettings: async () => {
-        console.log("Attempting to call Auth0Api.getTenantSettings...");
+    /**
+     * Calls the Auth0 Management API to get high-level tenant settings.
+     */
+    get_tenant_settings: async () => {
+        console.log("Attempting to call Auth0Api.get_tenant_settings...");
         const token = await getAuth0Token();
         if (!token) throw new Error('Could not retrieve Auth0 token.');
 
@@ -91,15 +100,18 @@ const Auth0Api = {
         });
         
         const data = await response.json();
-        console.log("Auth0 getTenantSettings response:", JSON.stringify(data, null, 2));
+        console.log("Auth0 get_tenant_settings response:", JSON.stringify(data, null, 2));
         
         if (!response.ok) {
-            throw new Error(`Auth0 API call failed with status: ${response.status}`);
+            throw new Error(`Auth0 API call failed with status: ${response.status}. Response: ${JSON.stringify(data)}`);
         }
         return data;
     },
-    listSigningKeys: async () => {
-        console.log("Attempting to call Auth0Api.listSigningKeys...");
+    /**
+     * Calls the Auth0 Management API to retrieve a list of signing keys (SAML certificates).
+     */
+    list_signing_keys: async () => {
+        console.log("Attempting to call Auth0Api.list_signing_keys...");
         const token = await getAuth0Token();
         if (!token) throw new Error('Could not retrieve Auth0 token.');
 
@@ -109,10 +121,10 @@ const Auth0Api = {
         });
 
         const data = await response.json();
-        console.log("Auth0 listSigningKeys response:", JSON.stringify(data, null, 2));
+        console.log("Auth0 list_signing_keys response:", JSON.stringify(data, null, 2));
 
         if (!response.ok) {
-            throw new Error(`Auth0 API call failed with status: ${response.status}`);
+            throw new Error(`Auth0 API call failed with status: ${response.status}. Response: ${JSON.stringify(data)}`);
         }
         return data;
     }
